@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任務管理系統</title>
+</head>
+<body>
+    <h1>任務管理系統</h1>
+
+    <!-- 表單：新增任務 -->
+    <h2>新增任務</h2>
+    <form id="addTaskForm">
+        <label>任務名稱: <input type="text" id="title" required></label><span id="titleError" style="color: red; display: none;">名稱的第一個字必須是數字、英文字母或中文字</span><br>
+        <label>摘要: <input type="text" id="summary" required></label><br>
+        <label>詳細描述: <input type="text" id="description"></label><br>
+        <label>截止日期: <input type="date" id="due_date" required></label><br>
+        <label>重要程度: 
+            <select id="priority">
+                <option value="1">1 - 普通</option>
+                <option value="2">2 - 重要</option>
+                <option value="3">3 - 非常重要</option>
+            </select>
+        </label><br>
+        <button type="submit">新增任務</button>
+    </form>
+
+    <!-- 表單：編輯任務 -->
+    <h2>編輯任務</h2>
+    <form id="editTaskForm">
+        <label>選擇任務: 
+            <select id="taskSelector">
+                <option value="">請選擇任務</option>
+            </select>
+        </label><br>
+        <label>任務名稱: <input type="text" id="taskNameToEdit"></label><span id="editTitleError" style="color: red; display: none;">名稱的第一個字必須是數字、英文字母或中文字</span><br>
+        <label>摘要: <input type="text" id="updatedSummary"></label><br>
+        <label>詳細描述: <input type="text" id="updatedDescription"></label><br>
+        <label>截止日期: <input type="date" id="updatedDueDate"></label><br>
+        <label>重要程度: 
+            <select id="updatedPriority">
+                <option value="1">1 - 普通</option>
+                <option value="2">2 - 重要</option>
+                <option value="3">3 - 非常重要</option>
+            </select>
+        </label><br>
+        <button type="submit">更新任務</button>
+    </form>
+
+    <!-- 表單：刪除任務 -->
+    <h2>刪除任務</h2>
+    <form id="deleteTaskForm">
+        <label>選擇任務: 
+            <select id="taskSelectorForDelete">
+                <option value="">請選擇任務</option>
+            </select>
+        </label><br>
+        <button type="submit">刪除任務</button>
+    </form>
+
+    <!-- 任務清單 -->
+    <h2>查看任務清單</h2>
+    <div id="taskList">
+        <!-- 任務清單會在這裡顯示 -->
+    </div>
+
+    <script>
+        const validTitleRegex = /^[一-龥\w].*/;
+
+        // 新增任務
+        document.getElementById('addTaskForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('title').value;
+            const summary = document.getElementById('summary').value;
+            const description = document.getElementById('description').value;
+            const due_date = document.getElementById('due_date').value;
+            const priority = document.getElementById('priority').value;
+
+            if (!validTitleRegex.test(title)) {
+                alert('任務名稱的第一個字必須是數字、英文字母或中文字');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ title, summary, description, due_date, priority })
+                });
+
+                const result = await response.json();
+                alert(result.message || result.error);
+
+                if (response.ok) {
+                    document.getElementById('addTaskForm').reset(); // 清空表單
+                    fetchTasks(); // 刷新任務清單
+                    updateTaskSelectors(); // 更新下拉選單
+                }
+            } catch (error) {
+                alert('新增任務時發生錯誤');
+            }
+        });
+
+        // 更新任務
+        document.getElementById('editTaskForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const oldTitle = document.getElementById('taskSelector').value;
+            const title = document.getElementById('taskNameToEdit').value;
+            const summary = document.getElementById('updatedSummary').value;
+            const description = document.getElementById('updatedDescription').value;
+            const due_date = document.getElementById('updatedDueDate').value;
+            const priority = document.getElementById('updatedPriority').value;
+
+            if (!oldTitle) {
+                alert('請選擇要更新的任務');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/tasks/update', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ old_title: oldTitle, title, summary, description, due_date, priority })
+                });
+
+                const result = await response.json();
+                alert(result.message || result.error);
+
+                if (response.ok) {
+                    fetchTasks(); // 刷新任務清單
+                    updateTaskSelectors(); // 更新下拉選單
+                }
+            } catch (error) {
+                alert('更新任務時發生錯誤');
+            }
+        });
+
+        // 查看任務清單
+        async function fetchTasks() {
+            try {
+                const response = await fetch('http://127.0.0.1:5000/tasks');
+                if (!response.ok) throw new Error('無法獲取任務清單');
+
+                const tasks = await response.json();
+                const taskListDiv = document.getElementById('taskList');
+                taskListDiv.innerHTML = ''; // 清空舊數據
+
+                tasks.forEach(task => {
+                    const taskHtml = `
+                        <p>
+                            <strong>名稱：</strong> ${task.title}<br>
+                            <strong>摘要：</strong> ${task.summary}<br>
+                            <strong>詳細描述：</strong> ${task.description}<br>
+                            <strong>截止日期：</strong> ${task.due_date || '未設定'}<br>
+                            <strong>重要程度：</strong> ${task.priority || '未設定'} 顆星<br>
+                            <strong>最後更新時間：</strong> ${task.updated_at || task.created_at}<br>
+                        </p>
+                        <hr>
+                    `;
+                    taskListDiv.innerHTML += taskHtml;
+                });
+            } catch (error) {
+                alert('載入任務清單時發生錯誤');
+            }
+        }
+
+        // 頁面加載時自動加載任務清單
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('due_date').setAttribute('min', today);
+            document.getElementById('updatedDueDate')?.setAttribute('min', today);
+            fetchTasks(); // 預設加載所有任務
+            updateTaskSelectors();
+        });
+
+        // 更新下拉選單
+        async function updateTaskSelectors() {
+            try {
+                const response = await fetch('http://127.0.0.1:5000/tasks');
+                if (!response.ok) throw new Error('無法獲取任務清單');
+                const tasks = await response.json();
+
+                const taskSelector = document.getElementById('taskSelector');
+                const taskSelectorForDelete = document.getElementById('taskSelectorForDelete');
+
+                // 清空舊的選項
+                taskSelector.innerHTML = '<option value="">請選擇任務</option>';
+                taskSelectorForDelete.innerHTML = '<option value="">請選擇任務</option>';
+
+                // 添加新的選項
+                tasks.forEach(task => {
+                    const option = document.createElement('option');
+                    option.value = task.title;
+                    option.textContent = task.title;
+                    taskSelector.appendChild(option);
+                    taskSelectorForDelete.appendChild(option.cloneNode(true));
+                });
+            } catch (error) {
+                alert('更新下拉選單時發生錯誤');
+            }
+        }
+
+        // 編輯任務：自動填充選中任務的詳細信息
+        document.getElementById('taskSelector').addEventListener('change', async (e) => {
+            const selectedTask = e.target.value;
+            if (!selectedTask) return;
+
+            try {
+                const response = await fetch(`http://127.0.0.1:5000/tasks/${selectedTask}`);
+                if (!response.ok) throw new Error('無法獲取任務詳細資料');
+                const task = await response.json();
+
+                document.getElementById('taskNameToEdit').value = task.title;
+                document.getElementById('updatedSummary').value = task.summary;
+                document.getElementById('updatedDescription').value = task.description;
+                document.getElementById('updatedDueDate').value = task.due_date;
+                document.getElementById('updatedPriority').value = task.priority;
+            } catch (error) {
+                alert('載入任務詳細資料時發生錯誤');
+            }
+        });
+
+        // 刪除任務
+        document.getElementById('deleteTaskForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const selectedTask = document.getElementById('taskSelectorForDelete').value;
+
+            if (!selectedTask) {
+                alert('請選擇要刪除的任務');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/tasks/delete', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ title: selectedTask })
+                });
+
+                const result = await response.json();
+                alert(result.message || result.error);
+
+                if (response.ok) {
+                    fetchTasks(); // 刷新任務清單
+                    updateTaskSelectors(); // 更新下拉選單
+                }
+            } catch (error) {
+                alert('刪除任務時發生錯誤');
+            }
+        });
+
+    </script>
+</body>
+</html>
