@@ -67,7 +67,7 @@
     <script>
         const validTitleRegex = /^[一-龥\w].*/;
 
-        // 新增任務
+    
         document.getElementById('addTaskForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const title = document.getElementById('title').value;
@@ -94,16 +94,16 @@
                 alert(result.message || result.error);
 
                 if (response.ok) {
-                    document.getElementById('addTaskForm').reset(); // 清空表單
-                    fetchTasks(); // 刷新任務清單
-                    updateTaskSelectors(); // 更新下拉選單
+                    document.getElementById('addTaskForm').reset(); 
+                    fetchTasks(); 
+                    updateTaskSelectors(); 
                 }
             } catch (error) {
                 alert('新增任務時發生錯誤');
             }
         });
 
-        // 更新任務
+
         document.getElementById('editTaskForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const oldTitle = document.getElementById('taskSelector').value;
@@ -131,15 +131,15 @@
                 alert(result.message || result.error);
 
                 if (response.ok) {
-                    fetchTasks(); // 刷新任務清單
-                    updateTaskSelectors(); // 更新下拉選單
+                    fetchTasks(); 
+                    updateTaskSelectors(); 
                 }
             } catch (error) {
                 alert('更新任務時發生錯誤');
             }
         });
 
-        // 查看任務清單
+ 
         async function fetchTasks() {
             try {
                 const response = await fetch('http://127.0.0.1:5000/tasks');
@@ -147,7 +147,7 @@
 
                 const tasks = await response.json();
                 const taskListDiv = document.getElementById('taskList');
-                taskListDiv.innerHTML = ''; // 清空舊數據
+                taskListDiv.innerHTML = ''; 
 
                 tasks.forEach(task => {
                     const taskHtml = `
@@ -168,16 +168,16 @@
             }
         }
 
-        // 頁面加載時自動加載任務清單
+    
         document.addEventListener('DOMContentLoaded', () => {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('due_date').setAttribute('min', today);
             document.getElementById('updatedDueDate')?.setAttribute('min', today);
-            fetchTasks(); // 預設加載所有任務
+            fetchTasks(); 
             updateTaskSelectors();
         });
 
-        // 更新下拉選單
+   
         async function updateTaskSelectors() {
             try {
                 const response = await fetch('http://127.0.0.1:5000/tasks');
@@ -187,11 +187,11 @@
                 const taskSelector = document.getElementById('taskSelector');
                 const taskSelectorForDelete = document.getElementById('taskSelectorForDelete');
 
-                // 清空舊的選項
+              
                 taskSelector.innerHTML = '<option value="">請選擇任務</option>';
                 taskSelectorForDelete.innerHTML = '<option value="">請選擇任務</option>';
 
-                // 添加新的選項
+             
                 tasks.forEach(task => {
                     const option = document.createElement('option');
                     option.value = task.title;
@@ -204,7 +204,7 @@
             }
         }
 
-        // 編輯任務：自動填充選中任務的詳細信息
+      
         document.getElementById('taskSelector').addEventListener('change', async (e) => {
             const selectedTask = e.target.value;
             if (!selectedTask) return;
@@ -224,7 +224,7 @@
             }
         });
 
-        // 刪除任務
+    
         document.getElementById('deleteTaskForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const selectedTask = document.getElementById('taskSelectorForDelete').value;
@@ -247,8 +247,8 @@
                 alert(result.message || result.error);
 
                 if (response.ok) {
-                    fetchTasks(); // 刷新任務清單
-                    updateTaskSelectors(); // 更新下拉選單
+                    fetchTasks(); 
+                    updateTaskSelectors();
                 }
             } catch (error) {
                 alert('刪除任務時發生錯誤');
